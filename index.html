@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Malak ❤</title>
+<style>
+:root{color-scheme:dark;--bg:#07010f;--fg:#ffffff;--pink:#ff4d79}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:Tahoma,system-ui,sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--fg);background:var(--bg);z-index:2;cursor:pointer;transition:opacity .8s;text-align:center;padding:24px}
+#start .b{font-size:78px;color:var(--pink);animation:p .8s infinite alternate}
+#start .t{font-size:20px;opacity:.85}
+@keyframes p{to{transform:scale(1.25)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="start"><div class="b">♥</div><div class="t">اضغطي هنا يا ملك… في حاجة ليكي</div></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),R=Math.random,TAU=Math.PI*2;
+let W,H,D=Math.min(devicePixelRatio||1,2);
+function rs(){W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}
+addEventListener('resize',rs);rs();
+const N=420,pts=[];let fw=[],sp=[],hs=[],t0=0,last=0,nextFw=0,nextH=0,go=false;
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const ease=v=>1-Math.pow(1-v,3);
+function hp(t,s,cx,cy){return[cx+s*16*Math.pow(Math.sin(t),3),cy-s*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))]}
+function launch(tx,ty){fw.push({x:tx??W*(.12+.76*R()),y:H,ty:ty??H*(.12+.4*R()),v:8+R()*4,h:R()*360})}
+function boom(f){
+  const heart=R()<.35,n=heart?60:80;
+  for(let i=0;i<n;i++){
+    let vx,vy;
+    if(heart){const t=i/n*TAU;vx=.22*16*Math.pow(Math.sin(t),3);vy=-.22*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))}
+    else{const a=R()*TAU,s=1+R()*4.5;vx=Math.cos(a)*s;vy=Math.sin(a)*s}
+    sp.push({x:f.x,y:f.y,vx,vy,l:1,h:f.h+R()*40,g:heart?.02:.05})
+  }
+}
+function init(){
+  for(let i=0;i<N;i++)pts.push({sx:R()*W,sy:R()*H})
+}
+function frame(now){
+  requestAnimationFrame(frame);
+  if(!t0){t0=now;last=now}
+  const t=(now-t0)/1000;last=now;
+  x.globalCompositeOperation='source-over';
+  x.fillStyle='rgba(7,1,15,.25)';x.fillRect(0,0,W,H);
+  const s=Math.min(W/38,H/40),cx=W/2,cy=H*.38,beat=1+.035*Math.sin(t*5)*cl(t-2.5);
+  // floating hearts
+  if(t>nextH){nextH=t+.14;hs.push({x:R()*W,y:H+30,z:10+R()*26,v:.6+R()*1.6,p:R()*TAU,h:R()<.5?345:320})}
+  hs=hs.filter(o=>o.y>-40);
+  for(const o of hs){o.y-=o.v;const px=o.x+Math.sin(o.y/40+o.p)*18;
+    x.fillStyle=`hsla(${o.h},90%,65%,.75)`;x.font=o.z+'px sans-serif';x.textAlign='center';x.fillText('♥',px,o.y)}
+  // fireworks
+  if(t>nextFw){nextFw=t+(t<3?.35:.7+R()*.6);launch()}
+  x.globalCompositeOperation='lighter';
+  for(const f of fw){f.y-=f.v;f.v*=.985;
+    x.fillStyle=`hsl(${f.h},100%,70%)`;x.beginPath();x.arc(f.x,f.y,2.4,0,TAU);x.fill();
+    if(f.y<=f.ty||f.v<2){f.dead=1;boom(f)}}
+  fw=fw.filter(f=>!f.dead);
+  for(const p of sp){p.x+=p.vx;p.y+=p.vy;p.vx*=.985;p.vy=p.vy*.985+p.g;p.l-=.011;
+    x.fillStyle=`hsla(${p.h},100%,65%,${Math.max(p.l,0)})`;x.beginPath();x.arc(p.x,p.y,2,0,TAU);x.fill()}
+  sp=sp.filter(p=>p.l>0);
+  x.globalCompositeOperation='source-over';
+  // heart fill
+  const fa=cl((t-2.2)/1.2);
+  if(fa>0){
+    x.beginPath();
+    for(let i=0;i<=120;i++){const[a,b]=hp(i/120*TAU,s*beat,cx,cy);i?x.lineTo(a,b):x.moveTo(a,b)}
+    x.closePath();
+    const g=x.createRadialGradient(cx,cy-s*4,s,cx,cy,s*18);
+    g.addColorStop(0,'#ff4f6e');g.addColorStop(1,'#b0002a');
+    x.save();x.globalAlpha=fa;x.shadowColor='#ff2d55';x.shadowBlur=40*fa;x.fillStyle=g;x.fill();x.restore();
+  }
+  // converging particles
+  const e=ease(cl(t/2.4));
+  x.globalCompositeOperation='lighter';
+  for(let i=0;i<N;i++){const p=pts[i],[tx,ty]=hp(i/N*TAU,s*beat,cx,cy);
+    const px=p.sx+(tx-p.sx)*e,py=p.sy+(ty-p.sy)*e;
+    x.fillStyle=`rgba(255,120,160,${.9-.4*fa})`;x.beginPath();x.arc(px,py,2.2,0,TAU);x.fill()}
+  x.globalCompositeOperation='source-over';
+  // MALAK letters
+  const L='MALAK',fs=s*5.6;x.font=`bold ${fs}px Georgia,serif`;x.textAlign='left';x.textBaseline='middle';
+  const gap=fs*.1,ws=[...L].map(ch=>x.measureText(ch).width);
+  let tw=ws.reduce((a,b)=>a+b,0)+gap*4,lx=cx-tw/2;
+  for(let i=0;i<5;i++){
+    const a=ease(cl((t-3.4-i*.3)/.6));
+    if(a>0){x.save();x.globalAlpha=a;x.shadowColor='#fff';x.shadowBlur=18*a;x.fillStyle='#fff';
+      x.translate(lx+ws[i]/2,cy+s*1.5-(1-a)*20);x.scale(.6+.4*a,.6+.4*a);x.fillText(L[i],-ws[i]/2,0);x.restore()}
+    lx+=ws[i]+gap}
+  x.textBaseline='alphabetic';
+  // message
+  const ma=ease(cl((t-5.4)/1.2));
+  if(ma>0){x.save();x.globalAlpha=ma;x.textAlign='center';x.fillStyle='#ffd1dc';x.shadowColor='#ff2d55';x.shadowBlur=14;
+    x.font='bold '+Math.max(22,s*2.2)+'px Tahoma,system-ui,sans-serif';
+    x.fillText('بحبك يا ملك ♥',cx,cy+s*17+Math.max(44,s*4));x.restore()}
+}
+function begin(){
+  if(go)return;go=true;init();
+  const st=document.getElementById('start');st.style.opacity=0;st.style.pointerEvents='none';
+  setTimeout(()=>st.remove(),900);
+  for(let i=0;i<4;i++)setTimeout(()=>launch(),i*180);
+  if(navigator.vibrate)try{navigator.vibrate([80,60,80])}catch(e){}
+  requestAnimationFrame(frame);
+}
+document.getElementById('start').addEventListener('click',begin);
+c.addEventListener('pointerdown',e=>{if(go){launch(e.clientX,e.clientY);if(fw.length>12)fw.shift()}});
+</script>
+</body>
+</html>
